@@ -2,7 +2,6 @@ use nix::sys::ptrace;
 use nix::sys::signal;
 use nix::sys::wait::{waitpid, WaitPidFlag, WaitStatus};
 use nix::unistd::Pid;
-use std::io::{self, ErrorKind};
 use std::os::unix::process::CommandExt;
 use std::process::{Child, Command};
 
@@ -102,5 +101,11 @@ impl Inferior {
     pub fn continue_running(&mut self) -> Result<Status, nix::Error> {
         ptrace::cont(self.pid(), None)?;
         self.wait(None)
+    }
+
+    pub fn kill(&mut self) {
+        println!("process {} being killed", self.child.id());
+        self.child.kill().expect("failed to kill process");
+        waitpid(self.pid(), None).expect("failed to reaping killed process");
     }
 }

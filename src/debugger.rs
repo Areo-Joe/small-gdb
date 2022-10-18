@@ -2,6 +2,7 @@ use crate::debugger_command::DebuggerCommand;
 use crate::inferior::Inferior;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
+use crate::inferior::Status;
 
 pub struct Debugger {
     target: String,
@@ -32,22 +33,39 @@ impl Debugger {
         loop {
             match self.get_next_command() {
                 DebuggerCommand::Run(args) => {
+                    self.inferior.take().map(|mut inferior| inferior.kill());
                     if let Some(inferior) = Inferior::new(&self.target, &args) {
                         // Create the inferior
                         self.inferior = Some(inferior);
                         // TODO (milestone 1): make the inferior run
                         // You may use self.inferior.as_mut().unwrap() to get a mutable reference
                         // to the Inferior object
-                        if let Ok(_) = self.inferior.as_mut().unwrap().continue_running() {
-                            println!("exit")    
+                        if let Ok(status) = self.inferior.as_mut().unwrap().continue_running() {
+                            match status {
+                                Status::Exited(code) => println!("Exited with code {}", code),
+                                Status::Signaled(sig) => println!("Signaled with signal {}", sig),
+                                Status::Stopped(sig, ins) => println!("Stoped by signal {}, at instruction 0x{:x}", sig, ins)
+                            };
                         } else {
-                            println!("shitshit")
+                            println!("failed to continue to run")
                         }
                     } else {
                         println!("Error starting subprocess");
                     }
                 }
+                DebuggerCommand::Cont => {
+                    if let Some(inferior) = &mut self.inferior {
+                        if inferior.continue_running().is_err() {
+                            println!("Error continuing process");
+                        }
+                    } else {
+                        println!("Nothing running!");
+                    }
+                },
                 DebuggerCommand::Quit => {
+                    self.inferior.take().map(|mut inferior| {
+                        inferior.kill();
+                    });
                     return;
                 }
             }
