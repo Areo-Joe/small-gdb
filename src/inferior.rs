@@ -2,7 +2,9 @@ use nix::sys::ptrace;
 use nix::sys::signal;
 use nix::sys::wait::{waitpid, WaitPidFlag, WaitStatus};
 use nix::unistd::Pid;
-use std::process::Child;
+use std::io::{self, ErrorKind};
+use std::os::unix::process::CommandExt;
+use std::process::{Child, Command};
 
 pub enum Status {
     /// Indicates inferior stopped. Contains the signal that stopped the process, as well as the
@@ -35,11 +37,47 @@ impl Inferior {
     /// an error is encountered.
     pub fn new(target: &str, args: &Vec<String>) -> Option<Inferior> {
         // TODO: implement me!
-        println!(
-            "Inferior::new not implemented! target={}, args={:?}",
-            target, args
-        );
-        None
+        // println!(
+        //     "Inferior::new not implemented! target={}, args={:?}",
+        //     target, args
+        // );
+        let mut command = Command::new(target);
+        command.args(args);
+        unsafe {
+            command.pre_exec(|| {
+                ptrace::traceme().expect("traceme shit!");
+                Ok(())
+            });
+        }
+        let child = command.spawn().expect("spawn shit!");
+        let child_pid = Pid::from_raw(child.id() as i32);
+        let status = waitpid(Some(child_pid), None).expect("wait shit!");
+        match status {
+            WaitStatus::Exited(_, _) => {
+                None
+            },
+            WaitStatus::Signaled(_, _, _) => {
+                None
+            },
+            WaitStatus::Stopped(_, signal) => {
+                match signal {
+                    signal::SIGTRAP => Some(Inferior{child}),
+                    _ => None
+                }
+            },
+            WaitStatus::PtraceEvent(_, _, _) => {
+                None
+            },
+            WaitStatus::PtraceSyscall(_) => {
+                None
+            },
+            WaitStatus::Continued(_) => {
+                None
+            },
+            WaitStatus::StillAlive => {
+                None
+            }
+        }
     }
 
     /// Returns the pid of this inferior.
@@ -59,5 +97,10 @@ impl Inferior {
             }
             other => panic!("waitpid returned unexpected status: {:?}", other),
         })
+    }
+
+    pub fn continue_running(&mut self) -> Result<Status, nix::Error> {
+        ptrace::cont(self.pid(), None)?;
+        self.wait(None)
     }
 }
