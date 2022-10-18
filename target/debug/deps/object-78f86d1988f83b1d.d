@@ -1,0 +1,13 @@
+d:\studyCode\small-gdb\target\debug\deps\object-78f86d1988f83b1d.rmeta: C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\lib.rs C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\common.rs C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\read\mod.rs C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\read\any.rs C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\read\coff.rs C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\read\elf.rs C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\read\macho.rs C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\read\pe.rs C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\read\traits.rs
+
+d:\studyCode\small-gdb\target\debug\deps\object-78f86d1988f83b1d.d: C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\lib.rs C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\common.rs C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\read\mod.rs C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\read\any.rs C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\read\coff.rs C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\read\elf.rs C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\read\macho.rs C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\read\pe.rs C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\read\traits.rs
+
+C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\lib.rs:
+C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\common.rs:
+C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\read\mod.rs:
+C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\read\any.rs:
+C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\read\coff.rs:
+C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\read\elf.rs:
+C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\read\macho.rs:
+C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\read\pe.rs:
+C:\Users\Areo-Joe\.cargo\registry\src\rsproxy.cn-8f6827c7555bfaf8\object-0.17.0\src\read\traits.rs:
