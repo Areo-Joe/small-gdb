@@ -10,7 +10,8 @@ pub struct Debugger {
     history_path: String,
     readline: Editor<()>,
     inferior: Option<Inferior>,
-    debug_data: DwarfData
+    debug_data: DwarfData,
+    break_points: Vec<usize>
 }
 
 impl Debugger {
@@ -39,7 +40,8 @@ impl Debugger {
             history_path,
             readline,
             inferior: None,
-            debug_data
+            debug_data,
+            break_points: vec![]
         }
     }
 
@@ -48,17 +50,26 @@ impl Debugger {
             match self.get_next_command() {
                 DebuggerCommand::Run(args) => {
                     self.inferior.take().map(|mut inferior| inferior.kill());
-                    if let Some(inferior) = Inferior::new(&self.target, &args) {
+                    if let Some(inferior) = Inferior::new(&self.target, &args, &mut self.break_points) {
                         // Create the inferior
                         self.inferior = Some(inferior);
                         // TODO (milestone 1): make the inferior run
                         // You may use self.inferior.as_mut().unwrap() to get a mutable reference
                         // to the Inferior object
-                        if let Ok(status) = self.inferior.as_mut().unwrap().continue_running() {
+                        if let Ok(status) = self.inferior.as_mut().unwrap().continue_running(&mut self.break_points) {
                             match status {
                                 Status::Exited(code) => println!("Exited with code {}", code),
                                 Status::Signaled(sig) => println!("Signaled with signal {}", sig),
-                                Status::Stopped(sig, ins) => println!("Stoped by signal {}, at instruction 0x{:x}", sig, ins)
+                                Status::Stopped(sig, ins) => {
+                                    if let Some(line) = self.debug_data.get_line_from_addr(ins as usize) {
+                                        if let Some(function_name) = self.debug_data.get_function_from_addr(ins as usize) {
+                                            println!("Stoped by signal {}, at {} {}", sig, function_name, line);
+                                            println!("addr: {:#x}", ins);
+                                            continue;
+                                        }
+                                    }                                    
+                                    println!("Stoped by signal {}, at instruction 0x{:x}", sig, ins);
+                                }
                             };
                         } else {
                             println!("failed to continue to run")
@@ -69,7 +80,7 @@ impl Debugger {
                 }
                 DebuggerCommand::Cont => {
                     if let Some(inferior) = &mut self.inferior {
-                        if inferior.continue_running().is_err() {
+                        if inferior.continue_running(&mut self.break_points).is_err() {
                             println!("Error continuing process");
                         }
                     } else {
@@ -84,6 +95,15 @@ impl Debugger {
                 },
                 DebuggerCommand::Backtrace => {
                     self.inferior.as_ref().map(|inf| inf.print_backtrace(&self.debug_data));
+                },
+                DebuggerCommand::Break(s) => {
+                    match parse_address(&s) {
+                        Some(addr) => {
+                            self.break_points.push(addr);
+                            println!("Set breakpoint at {:#x}", addr);
+                        },
+                        None => println!("failed to parse address")
+                    }
                 }
             }
         }
@@ -129,4 +149,13 @@ impl Debugger {
             }
         }
     }
+}
+
+fn parse_address(addr: &str) -> Option<usize> {
+    let addr_without_0x = if addr.to_lowercase().starts_with("0x") {
+        &addr[2..]
+    } else {
+        &addr
+    };
+    usize::from_str_radix(addr_without_0x, 16).ok()
 }
