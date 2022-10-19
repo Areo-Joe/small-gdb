@@ -1,3 +1,4 @@
+use std::usize;
 use crate::debugger_command::DebuggerCommand;
 use crate::inferior::Inferior;
 use rustyline::error::ReadlineError;
@@ -101,11 +102,29 @@ impl Debugger {
                 },
                 DebuggerCommand::Break(s) => {
                     match parse_address(&s) {
-                        Some(addr) => {
+                        ParseAddressRes::Addr(addr) => {
                             self.break_points.push(addr);
                             println!("Set breakpoint at {:#x}", addr);
                         },
-                        None => println!("failed to parse address")
+                        ParseAddressRes::FalseAddr => {
+                            println!("Bad breakpoint!");
+                        },
+                        ParseAddressRes::FunctionName(function_name) => {
+                            if let Some(addr) = self.debug_data.get_addr_for_function(None, function_name) {
+                                self.break_points.push(addr);
+                                println!("Set breakpoint at func: {}, at addr: {:#x}", function_name, addr);
+                            } else {
+                                println!("Bad breakpoint!");
+                            }
+                        },
+                        ParseAddressRes::LineNumber(line_number) => {
+                            if let Some(addr) = self.debug_data.get_addr_for_line(None, line_number) {
+                                self.break_points.push(addr);
+                                println!("Set breakpoint at line: {}, at addr: {:#x}", line_number, addr);
+                            } else {
+                                println!("Bad breakpoint!");
+                            }
+                        }
                     }
                 }
             }
@@ -154,11 +173,30 @@ impl Debugger {
     }
 }
 
-fn parse_address(addr: &str) -> Option<usize> {
-    let addr_without_0x = if addr.to_lowercase().starts_with("0x") {
-        &addr[2..]
+enum ParseAddressRes<'a> {
+    Addr(usize),
+    LineNumber(usize),
+    FunctionName(&'a str),
+    FalseAddr
+}
+
+fn parse_address(addr: &str) -> ParseAddressRes {
+    if addr.starts_with("*") {
+        // addr
+        let addr = if (&addr[1..]).to_lowercase().starts_with("0x") {
+            &addr[3..]
+        } else {
+            &addr[1..]
+        };
+        match usize::from_str_radix(addr, 16).ok() {
+            Some(addr) => ParseAddressRes::Addr(addr),
+            None => ParseAddressRes::FalseAddr
+        }
     } else {
-        &addr
-    };
-    usize::from_str_radix(addr_without_0x, 16).ok()
+        if let Ok(line_number) = addr.parse::<usize>() {
+            ParseAddressRes::LineNumber(line_number)
+        } else {
+            ParseAddressRes::FunctionName(&addr)
+        }
+    }
 }
