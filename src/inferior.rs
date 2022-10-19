@@ -1,6 +1,7 @@
 use nix::sys::ptrace;
 use nix::sys::signal;
 use nix::sys::wait::{waitpid, WaitPidFlag, WaitStatus};
+use std::collections::HashMap;
 use std::mem::size_of;
 use nix::unistd::Pid;
 use std::os::unix::process::CommandExt;
@@ -30,7 +31,8 @@ fn child_traceme() -> Result<(), std::io::Error> {
 }
 
 pub struct Inferior {
-    child: Child
+    child: Child,
+    bp_to_original_byte: HashMap<usize, u8>
 }
 
 impl Inferior {
@@ -58,7 +60,7 @@ impl Inferior {
             WaitStatus::Stopped(_, signal) => {
                 match signal {
                     signal::SIGTRAP => {
-                        let mut ret_inf = Inferior{child};
+                        let mut ret_inf = Inferior{child, bp_to_original_byte: HashMap::new()};
                         ret_inf.install_break_points(break_points).ok()?;
                         Some(ret_inf)
                     },
@@ -101,16 +103,30 @@ impl Inferior {
 
     pub fn continue_running(&mut self, break_points: &mut Vec<usize>) -> Result<Status, nix::Error> {
         self.install_break_points(break_points)?;
-        ptrace::cont(self.pid(), None)?;
+        let inf_pid = self.pid();
+        let mut regs = ptrace::getregs(inf_pid)?;
+        let possible_bp_addr = (regs.rip - 1) as usize;
+        if let Some(origin_byte) = self.bp_to_original_byte.get(&possible_bp_addr) {
+            self.write_byte(possible_bp_addr, *origin_byte)?;
+            regs.rip -= 1;
+            ptrace::setregs(inf_pid, regs)?;
+            ptrace::step(inf_pid, None)?;
+            // println!("after step");
+            self.write_byte(possible_bp_addr, 0xcc)?;
+            // println!("after write byte");
+        }
+        ptrace::cont(inf_pid, None)?;
         self.wait(None)
     }
 
-    pub fn kill(&mut self) {
+    pub fn kill(&mut self) -> Vec<usize> {
         println!("process {} being killed", self.child.id());
         self.child.kill().expect("failed to kill process");
         waitpid(self.pid(), None).expect("failed to reaping killed process");
+        self.bp_to_original_byte.keys().map(|k| *k).collect()
     }
-    pub fn print_backtrace(&self, debug_data: &DwarfData) -> Result<(), nix::Error> {
+    pub fn print_backtrace(&self, debug_data: 
+        &DwarfData) -> Result<(), nix::Error> {
         let regs = ptrace::getregs(self.pid())?;
         let mut rip = regs.rip;
         let mut rbp = regs.rbp;
@@ -140,7 +156,8 @@ impl Inferior {
     }
     fn install_break_points(&mut self, break_points: &mut Vec<usize>) -> Result<(), nix::Error> {
         while let Some(addr) = break_points.pop() {
-            self.write_byte(addr, 0xcc)?;
+            let origin_byte = self.write_byte(addr, 0xcc)?;
+            self.bp_to_original_byte.insert(addr, origin_byte);
         }
         Ok(())
     }

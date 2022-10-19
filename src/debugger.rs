@@ -46,10 +46,13 @@ impl Debugger {
     }
 
     pub fn run(&mut self) {
+        self.debug_data.print();
         loop {
             match self.get_next_command() {
                 DebuggerCommand::Run(args) => {
-                    self.inferior.take().map(|mut inferior| inferior.kill());
+                    self.inferior.take().map(|mut inferior| {
+                        self.break_points = inferior.kill();
+                    });
                     if let Some(inferior) = Inferior::new(&self.target, &args, &mut self.break_points) {
                         // Create the inferior
                         self.inferior = Some(inferior);
