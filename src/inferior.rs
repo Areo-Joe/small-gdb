@@ -4,6 +4,7 @@ use nix::sys::wait::{waitpid, WaitPidFlag, WaitStatus};
 use nix::unistd::Pid;
 use std::os::unix::process::CommandExt;
 use std::process::{Child, Command};
+use crate::dwarf_data::DwarfData;
 
 pub enum Status {
     /// Indicates inferior stopped. Contains the signal that stopped the process, as well as the
@@ -107,5 +108,34 @@ impl Inferior {
         println!("process {} being killed", self.child.id());
         self.child.kill().expect("failed to kill process");
         waitpid(self.pid(), None).expect("failed to reaping killed process");
+    }
+    pub fn print_backtrace(&self, debug_data: &DwarfData) -> Result<(), nix::Error> {
+        let regs = ptrace::getregs(self.pid())?;
+        let mut rip = regs.rip;
+        let mut rbp = regs.rbp;
+        loop {
+            let function_name = print_function_line(rip as usize, debug_data)?;
+            if function_name == "main" {
+                break;
+            }
+            rip = ptrace::read(self.pid(), (rbp + 8) as ptrace::AddressType)? as u64;
+            rbp = ptrace::read(self.pid(), rbp as ptrace::AddressType)? as u64;
+        }
+        Ok(())
+    }
+}
+
+fn print_function_line(rip: usize, debug_data: &DwarfData) -> Result<String, nix::Error> {
+    if let Some(line) = debug_data.get_line_from_addr(rip as usize) {
+        if let Some(function_name) = debug_data.get_function_from_addr(rip as usize) {
+            println!("{} ({})", function_name, line);
+            Ok(function_name)
+        } else {
+            println!("no function name");
+            Err(nix::Error::Sys(nix::errno::Errno::UnknownErrno))
+        }
+    } else {
+        println!("no line number");
+        Err(nix::Error::Sys(nix::errno::Errno::UnknownErrno))
     }
 }
